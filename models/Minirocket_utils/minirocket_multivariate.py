@@ -949,6 +949,9 @@ def _transform_multi(X, parameters, poses, use_hdc=False):
 
                 else:
                     for feature_count in range(num_features_this_dilation):
+                        pose = poses[
+                            (feature_index_start + feature_count) * n_timepoints:
+                            (feature_index_start + feature_count + 1) * n_timepoints]
                         if use_hdc:
                             features[
                                 example_index, feature_index_start + feature_count
