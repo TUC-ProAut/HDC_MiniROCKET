@@ -25,7 +25,8 @@ def load_dataset(dataset,config):
     """
     # load preprocessed data
     if dataset == "UCR":
-        X_train, X_test, y_train, y_test = load_UCR_dataset(ucr_index=config.ucr_idx)
+        X_train, X_test, y_train, y_test = load_UCR_dataset(ucr_index=config.ensemble_idx,
+                                                            dataset_path=config.dataset_path)
     elif dataset == "synthetic":
         X_train, X_test, y_train, y_test = load_synthetic_dataset(hard_case=False)
     elif dataset == "synthetic_hard":
@@ -50,13 +51,23 @@ def load_dataset(dataset,config):
     return X_train, X_test, y_train, y_test, config
 
 
-def load_UCR_dataset(ucr_index):
+def load_UCR_dataset(ucr_index, dataset_path):
     """
+    load the specific data set (from the data/ folder)
+    @param ucr_index: specifies the data set [int]
+    @param dataset_path: path to the data set [string]
+    @return: set of training and test data [tuple]
     """
     print("Loading UCR train / test dataset : ", UCR_SETS[ucr_index])
 
-    X_train, y_train = load_UCR_UEA_dataset(name=UCR_PREFIX[ucr_index], split='train',return_X_y=True,extract_path=data_path_univar)
-    X_test, y_test = load_UCR_UEA_dataset(name=UCR_PREFIX[ucr_index], split='test',return_X_y=True,extract_path=data_path_univar)
+    X_train, y_train = load_UCR_UEA_dataset(name=UCR_PREFIX[ucr_index],
+                                            split='train',
+                                            return_X_y=True,
+                                            extract_path=os.path.abspath(dataset_path + data_path_univar))
+    X_test, y_test = load_UCR_UEA_dataset(name=UCR_PREFIX[ucr_index],
+                                          split='test',
+                                          return_X_y=True,
+                                          extract_path=os.path.abspath(dataset_path + data_path_univar))
 
     X_train, X_test = df2np(X_train, X_test)
 

@@ -130,11 +130,11 @@ class HDC_MINIROCKET_model:
             idx_c.append((idx))
             n_samples = np.maximum(int(len(idx) * 0.8),1)
 
-            idx_train = np.append(idx_train, idx[:n_samples]).astype(np.int)
+            idx_train = np.append(idx_train, idx[:n_samples]).astype(int)
             if n_samples == 1:
-                idx_test = np.append(idx_test, idx[:]).astype(np.int)
+                idx_test = np.append(idx_test, idx[:]).astype(int)
             else:
-                idx_test = np.append(idx_test, idx[n_samples:]).astype(np.int)
+                idx_test = np.append(idx_test, idx[n_samples:]).astype(int)
 
         # compute min number of class samples
         min_samples_per_class = 1000
@@ -153,6 +153,7 @@ class HDC_MINIROCKET_model:
 
         # iterate over scales
         for s_idx in range(len(scales)):
+            print('scale: ', scales[s_idx])
             s = scales[s_idx]
             self.config.scale = s
 
@@ -173,6 +174,7 @@ class HDC_MINIROCKET_model:
             else:
                 # multiple splits
                 for k in range(max_k):
+                    print(f"    split {k+1}/{max_k}")
                     idx_train = []
                     idx_test = []
                     for c in range(len(C)):
@@ -181,8 +183,8 @@ class HDC_MINIROCKET_model:
                         for t in np.delete(np.arange(max_k), k):
                             idx_train = np.append(idx_train, splits[t])
 
-                    idx_train = idx_train.astype(np.int)
-                    idx_test = idx_test.astype(np.int)
+                    idx_train = idx_train.astype(int)
+                    idx_test = idx_test.astype(int)
 
                     HDC_train = HDC[idx_train, :]
                     HDC_test = HDC[idx_test, :]
@@ -266,19 +268,13 @@ class HDC_MINIROCKET_model:
         report = classification_report(y_test.astype(int), pred, output_dict=True)
         logger.info(classification_report(y_test.astype(int), pred))
 
-        acc = report['accuracy']
-        f1 = f1_score(y_test.astype(int), pred, average='weighted')
-        cm = confusion_matrix(y_test.astype(int), pred)
-
-
-        logger.info("Confusion matrix:")
-        logger.info(cm)
+        scores = self.classifier.decision_function(self.X_test_HDC)
 
         # print time results
         logger.info("Data preprocessing time: " + str(self.train_preproc) + ' + ' + str(self.test_preproc) + ' = ' + str(self.train_preproc + self.test_preproc))
         logger.info("Training time: " + str(self.training_time))
         logger.info("Evaluation: " + str(self.testing_time))
 
-        return acc, f1, cm
+        return pred, scores
 
 

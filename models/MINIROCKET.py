@@ -66,18 +66,13 @@ class MINIROCKET_model:
         report = classification_report(y_test.astype(int), pred, output_dict=True)
         logger.info(classification_report(y_test.astype(int), pred))
 
-        acc = report['accuracy']
-        f1 = f1_score(y_test.astype(int), pred, average='weighted')
-        cm = confusion_matrix(y_test.astype(int), pred)
-
-        logger.info("Confusion matrix:")
-        logger.info(cm)
+        scores = self.classifier.decision_function(self.X_test_HDC)
 
         # print time results
         logger.info("Data preprocessing time: " + str(self.train_preproc) + ' + ' + str(self.test_preproc) + ' = ' + str(self.train_preproc + self.test_preproc))
         logger.info("Training time: " + str(self.training_time))
         logger.info("Evaluation: " + str(self.testing_time))
 
-        return acc, f1, cm
+        return pred, scores
 
 

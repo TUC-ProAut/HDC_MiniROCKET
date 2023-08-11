@@ -7,6 +7,7 @@ from data.dataset_utils import *
 import logging
 from models.HDC_MINIROCKET import HDC_MINIROCKET_model
 from models.MINIROCKET import MINIROCKET_model
+from sklearn.metrics import accuracy_score, roc_auc_score, classification_report, f1_score, confusion_matrix
 
 # self.config logger
 logger = logging.getLogger('log')
@@ -24,8 +25,9 @@ class NetTrial():
         self.config.dataset = args.dataset
         self.config.model_name = args.model
         self.config.stat_iterations = args.stat_iterations
-        self.config.ucr_idx = args.ucr_idx
+        self.config.ensemble_idx = args.ensemble_idx
         self.config.normalize_data = args.normalize
+        self.config.dataset_path = args.dataset_path
 
         # load data at initialization
         self.load_data()
@@ -78,128 +80,135 @@ class NetTrial():
             logger.info('Training data contains ' + str(len(self.X_train_list)) + ' training instances...')
             f1s = []
             accs = []
-    
+
             for it in range(len(self.X_train_list)):
+                logger.info(('.......'))
+                logger.info('instance ' + str(it) + ':')
+
+                X_train = self.X_train_list[it]
+                X_test = self.X_test_list[it]
+                y_train = self.y_train_list[it]
+                y_test = self.y_test_list[it]
+
+                # self.config.HDC_dim = X_train.shape[1]
+                logger.info('Training dataset shape: ' + str(X_train.shape) + str(y_train.shape))
+                logger.info('Test dataset shape: ' + str(X_test.shape) + str(y_test.shape))
+
+                self.config.train_count = len(X_train)
+                self.config.test_data_count = len(X_test)
+                self.model.config = self.config
+
+                # train the model
+                self.model.train_model(X_train,y_train,X_test,y_test)
+
+                # evaluate the model
+                y_pred, y_scores = self.model.eval_model(X_train, y_train, X_test, y_test)
+                # evaluate the results
+                logger.info('Results on test data: ')
+                report = classification_report(y_test.astype(int), y_pred, output_dict=True)
+
+                # accuracy and f1 score
+                acc = report['accuracy']
+                f1 = f1_score(y_test.astype(int), y_pred, average='weighted')
+
+                logger.info('Accuracy: ' + str(acc))
+                logger.info('F1 score: ' + str(f1))
+
+                accs.append(acc)
+                f1s.append(f1)
+
+                acc_stat.append(np.mean(accs))
+                f1_stat.append((np.mean(f1s)))
+
+                idx = self.config.ensemble_idx
+
                 try:
-                    logger.info(('.......'))
-                    logger.info('instance ' + str(it) + ':')
+                    file_path = 'results/' + self.config.model_name + '_' + self.config.dataset + '_' + \
+                           self.config.note
 
-                    X_train = self.X_train_list[it]
-                    X_test = self.X_test_list[it]
-                    y_train = self.y_train_list[it]
-                    y_test = self.y_test_list[it]
+                    # write other results to excel
+                    file = file_path + '_results.xlsx'
+                    file_f1 = file_path + '_results_f1.xlsx'
+                    file_time = file_path + '_time.xlsx'
+                    acc_df = pd.DataFrame({'data': acc}, index=[0])
+                    f1_df = pd.DataFrame({'data': f1}, index=[0])
+                    idx_df = pd.DataFrame({'data': idx}, index=[0])
+                    # write index
+                    append_df_to_excel(file, pd.DataFrame({self.config.dataset + '_idx': []}),
+                                       startcol=0, index=False, header=True,
+                                       startrow=0)
+                    append_df_to_excel(file_f1, pd.DataFrame({self.config.dataset + '_idx': []}),
+                                       startcol=0, index=False, header=True,
+                                       startrow=0)
+                    append_df_to_excel(file_time, pd.DataFrame({self.config.dataset + '_idx': []}),
+                                       startcol=0, index=False, header=True,
+                                       startrow=0)
 
-                    # self.config.HDC_dim = X_train.shape[1]
-                    logger.info('Training dataset shape: ' + str(X_train.shape) + str(y_train.shape))
-                    logger.info('Test dataset shape: ' + str(X_test.shape) + str(y_test.shape))
+                    if self.config.best_scale:
+                        header_name = pd.DataFrame({'acc_at_best_scale' :[],
+                                                    'best_scale':[]})
+                    else:
+                        header_name = pd.DataFrame({'scale_idx' + str(self.config.scale_idx): []})
+                    # files for the normal results
+                    append_df_to_excel(file, header_name,
+                                       startcol=self.config.scale_idx + 1, index=False, header=True,
+                                       startrow=0)
+                    append_df_to_excel(file, acc_df,
+                                       index=False, header=False, startrow=idx + 1,
+                                       startcol=self.config.scale_idx + 1)
 
-                    self.config.train_count = len(X_train)
-                    self.config.test_data_count = len(X_test)
-                    self.model.config = self.config
+                    if self.config.best_scale:
+                        append_df_to_excel(file, pd.DataFrame({'best_scale': str(self.config.scale)}, index=[0]),
+                                           index=False, header=False, startrow=idx + 1,
+                                           startcol=2)
 
-                    # train the model
-                    self.model.train_model(X_train,y_train,X_test,y_test)
+                    # files for the f1 results
+                    append_df_to_excel(file_f1, header_name,
+                                        startcol=self.config.scale_idx + 1, index=False, header=True,
+                                        startrow=0)
+                    append_df_to_excel(file_f1, f1_df,
+                                        index=False, header=False, startrow=idx + 1,
+                                        startcol=self.config.scale_idx + 1)
 
-                    # evaluate the model
-                    acc, f1, confusion_matrix = self.model.eval_model(X_train,y_train,X_test,y_test)
+                    append_df_to_excel(file, idx_df,
+                                       startcol=0, index=False, header=False,
+                                       startrow=idx + 1)
+                    append_df_to_excel(file_f1, idx_df,
+                                        startcol=0, index=False, header=False,
+                                        startrow=idx + 1)
 
-                    accs.append(acc)
-                    f1s.append(f1)
+                    # write run-time results to file
+                    append_df_to_excel(file_time, idx_df,
+                                       startcol=0, index=False, header=False,
+                                       startrow=idx + 1)
+                    append_df_to_excel(file_time, pd.DataFrame({'prep_time_train': []}),
+                                       startcol=1, index=False, header=True,
+                                       startrow=0)
+                    append_df_to_excel(file_time, pd.DataFrame({'data': self.model.train_preproc}, index=[0]),
+                                       startcol=1, index=False, header=False,
+                                       startrow=idx + 1)
+                    append_df_to_excel(file_time, pd.DataFrame({'prep_time_test': []}),
+                                       startcol=2, index=False, header=True,
+                                       startrow=0)
+                    append_df_to_excel(file_time, pd.DataFrame({'data': self.model.test_preproc}, index=[0]),
+                                       startcol=2, index=False, header=False,
+                                       startrow=idx + 1)
+                    append_df_to_excel(file_time, pd.DataFrame({'train_time': []}),
+                                       startcol=3, index=False, header=True,
+                                       startrow=0)
+                    append_df_to_excel(file_time, pd.DataFrame({'data': self.model.training_time}, index=[0]),
+                                       startcol=3, index=False, header=False,
+                                       startrow=idx + 1)
+                    append_df_to_excel(file_time, pd.DataFrame({'inf_time': []}),
+                                       startcol=4, index=False, header=True,
+                                       startrow=0)
+                    append_df_to_excel(file_time, pd.DataFrame({'data': self.model.testing_time}, index=[0]),
+                                       startcol=4, index=False, header=False,
+                                       startrow=idx + 1)
+
                 except Exception as e:
                     logger.info(e)
 
-            acc_stat.append(np.mean(accs))
-            f1_stat.append((np.mean(f1s)))
-
-            logger.info('Accuracy results of statistical repetitions: ' + str(acc_stat))
-            logger.info('F1 scores of statistical repetitions: ' + str(f1_stat))
-
-            # write all scores to extra file
-            logger.info('Mean Score: ' + str(np.mean(f1_stat)))
-            logger.info('Mean Accuracy: ' + str(np.mean(acc_stat)))
-
-            try:
-                with open('results/results_' + self.config.dataset + '_' + self.config.model_name + '.txt', 'a') as file:
-                    file.write(str(self.config.ucr_idx) + '\t'
-                               + str(round(np.mean(f1_stat), 4)) + '\t'
-                               + str(round(np.mean(acc_stat), 4)) + '\t'
-                               + str(X_train.shape[0]) + '\t'
-                               + str(X_train.shape[1]) + '\t'
-                               + str(X_train.shape[2]) + '\t'
-                               + str(self.config.n_classes) + '\t'
-                               + str(round(np.std(f1_stat), 2)) + '\t'
-                               + str(round(np.std(acc_stat), 2)) + '\t'
-                               + str(self.config.scale) + '\n'
-                               )
-
-                with open('results/computing_time_training_' + self.config.dataset + '_' + self.config.model_name + '.txt', 'a') as file:
-                    file.write(str(self.config.ucr_idx) + '\t' +
-                               str(self.model.train_preproc) + '\t'
-                               + str(self.model.training_time) + '\n'
-                               )
-                with open('results/computing_time_inference_' + self.config.dataset + '_' + self.config.model_name + '.txt',
-                          'a') as file:
-                    file.write(str(self.config.ucr_idx) + '\t' +
-                               str(self.model.test_preproc) + '\t'
-                               + str(self.model.testing_time) + '\n'
-                               )
-
-                # write results to excel
-                file = 'results/' + self.config.model_name + '_results.xlsx'
-                acc_df = pd.DataFrame({'data': acc}, index=[0])
-                ucr_idx_df = pd.DataFrame({'data': self.config.ucr_idx}, index=[0])
-                # write index
-                append_df_to_excel(file, pd.DataFrame({'UCR_idx': []}),
-                                   sheet_name=self.config.dataset,
-                                   startcol=0, index=False, header=True,
-                                   startrow=0)
-                # write data
-                if self.config.best_scale:
-                    header_name = 'best_scale_x_val'
-                    append_df_to_excel(file, pd.DataFrame({header_name: []}),
-                                       sheet_name=self.config.dataset,
-                                       startcol=self.config.scales.shape[0]+2, index=False, header=True,
-                                       startrow=0)
-                    append_df_to_excel(file, acc_df, sheet_name=self.config.dataset,
-                                       index=False, header=False, startrow=self.config.ucr_idx + 1,
-                                       startcol=self.config.scales.shape[0] + 2)
-                elif not self.config.best_scale:
-                    header_name = 'scale_idx' + str(self.config.scale_idx)
-                    append_df_to_excel(file, pd.DataFrame({header_name: []}),
-                                       sheet_name=self.config.dataset,
-                                       startcol=self.config.scale_idx + 1, index=False, header=True,
-                                       startrow=0)
-                    append_df_to_excel(file, acc_df, sheet_name=self.config.dataset,
-                                       index=False, header=False, startrow=self.config.ucr_idx + 1,
-                                       startcol=self.config.scale_idx+1)
-                append_df_to_excel(file, ucr_idx_df, sheet_name=self.config.dataset,
-                                   startcol=0, index=False, header=False,
-                                   startrow=self.config.ucr_idx + 1)
-
-                # write time measure results to excel
-                file_time = 'results/' + self.config.model_name + '_time_results.xlsx'
-                time_df = pd.DataFrame({'train_time_preproc': self.model.train_preproc, 'train_time':self.model.training_time,
-                                        'test_time_preproc':self.model.test_preproc,'test_time':self.model.testing_time}, index=[0])
-                ucr_idx_df = pd.DataFrame({'data': self.config.ucr_idx}, index=[0])
-                # write index
-                append_df_to_excel(file_time, pd.DataFrame({'UCR_idx': []}),
-                                   sheet_name=self.config.dataset,
-                                   startcol=0, index=False, header=True,
-                                   startrow=0)
-                # write data
-                append_df_to_excel(file_time, time_df, sheet_name=self.config.dataset,
-                                   index=False, header=False, startrow=self.config.ucr_idx + 1,
-                                   startcol=1)
-                append_df_to_excel(file_time, time_df.drop(time_df.index), sheet_name=self.config.dataset,
-                                   index=False, header=True, startrow=0,
-                                   startcol=1)
-                append_df_to_excel(file_time, ucr_idx_df, sheet_name=self.config.dataset,
-                                   startcol=0, index=False, header=False,
-                                   startrow=self.config.ucr_idx + 1)
-
-
-            except Exception as e:
-                logger.info(e)
 
     def eval(self):
         '''
@@ -231,7 +240,7 @@ class NetTrial():
 
         with open('results/computing_time_inference_' + self.config.dataset + '_' + self.config.model_name + '.txt',
                   'a') as file:
-            file.write(str(self.config.ucr_idx) + '\t' +
+            file.write(str(self.config.ensemble_idx) + '\t' +
                        str(self.model.test_preproc) + '\t'
                        + str(self.model.testing_time) + '\n'
                        )
@@ -265,50 +274,20 @@ def append_df_to_excel(filename, df, sheet_name='Sheet1', startrow=None,
                         [can be dictionary]
     Returns: None
     """
-    from openpyxl import load_workbook
-
     # ignore [engine] parameter if it was passed
     if 'engine' in to_excel_kwargs:
         to_excel_kwargs.pop('engine')
 
-    writer = pd.ExcelWriter(filename, engine='openpyxl')
-
-    # Python 2.x: define [FileNotFoundError] exception if it doesn't exist
-    try:
-        FileNotFoundError
-    except NameError:
-        FileNotFoundError = IOError
-
-
-    try:
-        # try to open an existing workbook
-        writer.book = load_workbook(filename)
-
-        # get the last row in the existing Excel sheet
-        # if it was not specified explicitly
-        if startrow is None and sheet_name in writer.book.sheetnames:
-            startrow = writer.book[sheet_name].max_row
-
-        # truncate sheet
-        if truncate_sheet and sheet_name in writer.book.sheetnames:
-            # index of [sheet_name] sheet
-            idx = writer.book.sheetnames.index(sheet_name)
-            # remove [sheet_name]
-            writer.book.remove(writer.book.worksheets[idx])
-            # create an empty sheet [sheet_name] using old index
-            writer.book.create_sheet(sheet_name, idx)
-
-        # copy existing sheets
-        writer.sheets = {ws.title:ws for ws in writer.book.worksheets}
-    except FileNotFoundError:
-        # file does not exist yet, we will create it
-        pass
-
-    if startrow is None:
-        startrow = 0
+    if os.path.isfile(filename):
+        writer = pd.ExcelWriter(filename, mode='a', engine='openpyxl', if_sheet_exists="overlay")
+    else:
+        # check if directory exists
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(filename))
+        writer = pd.ExcelWriter(filename, mode='w', engine='openpyxl')
 
     # write out the new sheet
     df.to_excel(writer, sheet_name, startrow=startrow, **to_excel_kwargs)
 
     # save the workbook
-    writer.save()
+    writer.close()

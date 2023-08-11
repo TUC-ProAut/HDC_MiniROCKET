@@ -23,13 +23,13 @@ Dataset download:
 - *--complete_UCR* parameter as argument of main.py to work with the complete UCR ensemble 
 - *--multi_scale* parameter as argument of main.py to run different scales defined in config.py
 - *--scale* parameter as argument of main.py to define a specific similarity scale
-- *--ucr_idx* parameter as argument of main.py to run a dataset of UCR
+- *--ensemble_idx* parameter as argument of main.py to run a dataset of UCR
 - *--config* parameter as argument of main.py to specify various configuration parameters defined in config.py 
 
 ### Run:
 #### UCR Datasets:
 - run dataset 0 of UCR with scale=0
-```python3 main.py --model HDC_MINIROCKET --dataset UCR --ucr_idx 0 --scale 0 --config Config_orig```
+```python3 main.py --model HDC_MINIROCKET --dataset UCR --ensemble_idx 0 --scale 0 --config Config_orig```
 - Run the complete UCR Benchmark ensemble with different scales: 
 ```python3 main.py --model HDC_MINIROCKET --dataset UCR --complete_UCR --multi_scale --config Config_orig```
 - run the complete UCR with automatically selecting the best scale (cross validation)

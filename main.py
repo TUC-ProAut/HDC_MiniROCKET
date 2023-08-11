@@ -28,6 +28,9 @@ if __name__ == '__main__':
                         help='Which dataset should be used?',
                         choices={'UCR','synthetic','synthetic_hard'},
                         default='UCR')
+    parser.add_argument('--dataset_path',
+                        help='Path to dataset',
+                        default='data')
     parser.add_argument('--complete_UCR',
                         help='Run on all UCR univariate timeseries datasets',
                         action='store_true',
@@ -47,7 +50,7 @@ if __name__ == '__main__':
     parser.add_argument('--scale',
                         help='scaling of the scalar encoding with fractional binding ',
                         default=0)
-    parser.add_argument('--ucr_idx',
+    parser.add_argument('--ensemble_idx',
                         help='index for UCR dataset ensemble',
                         type=int,
                         default=0)
@@ -90,7 +93,7 @@ if __name__ == '__main__':
             for i in range(128):
                 trainer = NetTrial(args)
                 logger.info("Index: " + str(i))
-                trainer.config.ucr_idx = i
+                trainer.config.ensemble_idx = i
                 trainer.config.scale_idx = s_idx
                 trainer.load_data()
                 trainer.train()
@@ -98,9 +101,9 @@ if __name__ == '__main__':
         else:
             logger.info("#### normal Training on " + args.dataset + ": ")
             logger.info("Config: HDC_dim = " + str(args.HDC_dim) + " scale = " + str(args.scale))
-            logger.info("UCR Index = " + str(args.ucr_idx))
+            logger.info("UCR Index = " + str(args.ensemble_idx))
             trainer = NetTrial(args)
-            trainer.config.ucr_idx = args.ucr_idx
+            trainer.config.ensemble_idx = args.ensemble_idx
             trainer.config.scale_idx = s_idx
             trainer.load_data()
             trainer.train()

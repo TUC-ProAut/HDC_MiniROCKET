@@ -23,15 +23,17 @@ class Config_orig(object):
     def __init__(self):
         # HDC Minirocket Config
         self = default_init(self)
+        self.note = ''
 
 class Config_orig_auto(object):
     """
-    configuration for classification with automatically selected the best scaling parameter
+    configuration for classification with automatically selected the best scaling parameter (grid search)
     """
     def __init__(self):
         # HDC Minirocket Config
         self = default_init(self)
         self.best_scale = True
+        self.note = 'auto'
 
 class Config_time_measure(object):
     """
@@ -41,3 +43,4 @@ class Config_time_measure(object):
         # HDC Minirocket Config
         self = default_init(self)
         self.n_time_measures = 5
+        self.note = 'time_measure'

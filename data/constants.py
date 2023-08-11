@@ -6,7 +6,7 @@
 import os
 
 # chose the path concerning the used pc
-data_path_univar = os.path.abspath('data/Univariate_ts')
+data_path_univar = os.path.abspath('/Univariate_ts')
 
 UCR_SETS = [
     data_path_univar + 'ACSF1',  # 0
