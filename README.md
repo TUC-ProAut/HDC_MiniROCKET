@@ -5,11 +5,19 @@ Code to the paper [1]. The approach is based on the time series classification a
 [2] A. Dempster, D. F. Schmidt, and G. I. Webb, “MiniRocket: A Very Fast (Almost) Deterministic Transform for Time Series Classification,” Proc. ACM SIGKDD Int. Conf. Knowl. Discov. Data Min., pp. 248–257, 2021.
 
 # Usage
-- install requirements 
+We recommend using a virtual environment to run the code.
+- Create virtual environment:
+```python3 -m venv venv```
+- Activate virtual environment:
+```source venv/bin/activate```
+- Install requirements:
+```pip3 install -r requirements.txt```
+
 
 ## 1. Download Dataset:
 Dataset download: 
 ```cd data; wget http://www.timeseriesclassification.com/Downloads/Archives/Univariate2018_ts.zip; unzip Univariate2018_ts.zip; cd ..```
+
 ## 2. Run scripts:
 ### File descriptions 
 - main.py contains some arguments (dataset, UCR index, scale, HDC dim, etc.)
@@ -25,6 +33,7 @@ Dataset download:
 - *--scale* parameter as argument of main.py to define a specific similarity scale
 - *--ensemble_idx* parameter as argument of main.py to run a dataset of UCR
 - *--config* parameter as argument of main.py to specify various configuration parameters defined in config.py 
+- *--dataset_path* parameter as argument of main.py to specify the path to the dataset (default: data/)
 
 ### Run:
 #### UCR Datasets:
