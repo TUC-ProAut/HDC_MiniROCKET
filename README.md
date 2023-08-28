@@ -42,7 +42,7 @@ Dataset download:
 - Run the complete UCR Benchmark ensemble with different scales: 
 ```python3 main.py --model HDC_MINIROCKET --dataset UCR --complete_UCR --multi_scale --config Config_orig```
 - run the complete UCR with automatically selecting the best scale (cross validation)
-```python3 main.py --model HDC_MINIROCKET --dataset UCR --complete_UCR --multi_scale --config Config_orig_auto```
+```python3 main.py --model HDC_MINIROCKET --dataset UCR --complete_UCR --config Config_orig_auto```
 #### Synthetic Dataset:
 - run normal synthetic datasets
 ```python3 main.py --model HDC_MINIROCKET --dataset synthetic --scale 1 --config Config_orig```
